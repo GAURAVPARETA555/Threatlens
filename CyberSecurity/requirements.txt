@@ -1,0 +1,15 @@
+# ThreatLens — CyberSecurity Module Requirements
+# ===============================================
+# The ThreatLens CyberSecurity detection engine and integration adapter
+# rely entirely on the Python Standard Library.
+# Zero external packages are required for runtime evaluation.
+#
+# Python Compatibility: Python >= 3.10
+# Tested on Python 3.10, 3.11, 3.12, 3.13
+
+# Optional Development & Quality Assurance Dependencies
+# -----------------------------------------------------
+# These tools are optional and only needed for enhanced developer workflows:
+# pytest>=7.0.0
+# flake8>=6.0.0
+
