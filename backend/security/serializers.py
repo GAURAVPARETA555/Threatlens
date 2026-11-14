@@ -43,22 +43,10 @@ class ScanSerializer(serializers.ModelSerializer):
 
 
 class DetectionAnalyzeSerializer(serializers.Serializer):
-    event_id = serializers.IntegerField()
+        """
+    The client only says WHICH event to analyze.
+    The rule result is computed on the server by Member 4's engine,
+    so it cannot be forged by the caller.
+    """
+        event_id = serializers.IntegerField(min_value=1)
 
-    rule_detected = serializers.BooleanField()
-    rule_confidence = serializers.FloatField(
-        min_value=0,
-        max_value=1,
-    )
-    attack_type = serializers.CharField(
-        required=False,
-        allow_blank=True,
-    )
-    evidence = serializers.CharField(
-        required=False,
-        allow_blank=True,
-    )
-    severity = serializers.CharField(
-        required=False,
-        allow_blank=True,
-    )
