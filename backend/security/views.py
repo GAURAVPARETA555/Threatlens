@@ -1,6 +1,5 @@
-from django.shortcuts import render
+import logging
 
-# Create your views here.
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 
@@ -8,6 +7,8 @@ from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
+from Integration.exceptions import IntegrationError
 
 from .models import (
     Attack,
@@ -27,6 +28,9 @@ from .serializers import (
 
 from .risk_engine import calculate_risk
 from .ml_client import predict_attack
+from .rule_client import run_rules
+
+logger = logging.getLogger(__name__)
 
 
 class SecurityEventCreateView(generics.CreateAPIView):
@@ -46,14 +50,10 @@ class SecurityEventListView(generics.ListAPIView):
         endpoint = self.request.query_params.get("endpoint")
 
         if source_ip:
-            queryset = queryset.filter(
-                source_ip=source_ip
-            )
+            queryset = queryset.filter(source_ip=source_ip)
 
         if endpoint:
-            queryset = queryset.filter(
-                endpoint__icontains=endpoint
-            )
+            queryset = queryset.filter(endpoint__icontains=endpoint)
 
         return queryset
 
@@ -62,38 +62,49 @@ class DetectionAnalyzeView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        serializer = DetectionAnalyzeSerializer(
-            data=request.data
-        )
-
+        serializer = DetectionAnalyzeSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-
-        data = serializer.validated_data
 
         event = get_object_or_404(
             SecurityEvent,
-            id=data["event_id"],
+            id=serializer.validated_data["event_id"],
         )
 
         # -----------------------------
-        # Member 4 rule result
+        # Member 4 rule engine (computed on the server)
         # -----------------------------
 
-        rule_detected = data["rule_detected"]
-        rule_confidence = data["rule_confidence"]
-        attack_type = data.get("attack_type", "")
-        evidence = data.get("evidence", "")
+        try:
+            rule = run_rules(event)
+        except IntegrationError as exc:
+            return Response(
+                {"detail": f"Event rejected by rule engine: {exc}"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        except Exception:
+            logger.exception("Rule engine failed for event %s", event.id)
+            return Response(
+                {"detail": "Rule engine failure."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
         # -----------------------------
-        # Find matching attack
+        # Link to the Attack catalog (create if missing)
         # -----------------------------
 
         attack = None
 
-        if attack_type:
+        if rule["attack_type"]:
             attack = Attack.objects.filter(
-                name__iexact=attack_type
+                name__iexact=rule["attack_type"]
             ).first()
+
+            if attack is None:
+                attack = Attack.objects.create(
+                    name=rule["attack_type"],
+                    category="Uncategorized",
+                    default_severity=rule["severity"] or "low",
+                )
 
         # -----------------------------
         # Member 3 ML service
@@ -113,8 +124,8 @@ class DetectionAnalyzeView(APIView):
         # -----------------------------
 
         final_score, final_severity = calculate_risk(
-            rule_detected=rule_detected,
-            rule_confidence=rule_confidence,
+            rule_detected=rule["rule_detected"],
+            rule_severity=rule["severity"],
             ml_prediction=ml_prediction,
             ml_confidence=ml_confidence,
         )
@@ -122,9 +133,9 @@ class DetectionAnalyzeView(APIView):
         detection = DetectionResult.objects.create(
             event=event,
             attack=attack,
-            rule_detected=rule_detected,
-            rule_confidence=rule_confidence,
-            rule_evidence=evidence,
+            rule_detected=rule["rule_detected"],
+            rule_confidence=rule["rule_confidence"],
+            rule_evidence=rule["evidence"],
             ml_prediction=ml_prediction,
             ml_confidence=ml_confidence,
             final_risk_score=final_score,
@@ -152,16 +163,12 @@ class DetectionListView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        queryset = DetectionResult.objects.all().order_by(
-            "-created_at"
-        )
+        queryset = DetectionResult.objects.all().order_by("-created_at")
 
         severity = self.request.query_params.get("severity")
 
         if severity:
-            queryset = queryset.filter(
-                final_severity=severity
-            )
+            queryset = queryset.filter(final_severity=severity)
 
         return queryset
 
@@ -171,22 +178,16 @@ class AlertListView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        queryset = Alert.objects.all().order_by(
-            "-created_at"
-        )
+        queryset = Alert.objects.all().order_by("-created_at")
 
         severity = self.request.query_params.get("severity")
         status_filter = self.request.query_params.get("status")
 
         if severity:
-            queryset = queryset.filter(
-                detection__final_severity=severity
-            )
+            queryset = queryset.filter(detection__final_severity=severity)
 
         if status_filter:
-            queryset = queryset.filter(
-                status=status_filter
-            )
+            queryset = queryset.filter(status=status_filter)
 
         return queryset
 
@@ -201,9 +202,7 @@ class AlertUpdateView(generics.UpdateAPIView):
 
         if instance.status == "resolved":
             instance.resolved_at = timezone.now()
-            instance.save(
-                update_fields=["resolved_at"]
-            )
+            instance.save(update_fields=["resolved_at"])
 
 
 class ScanCreateView(generics.CreateAPIView):
@@ -211,9 +210,7 @@ class ScanCreateView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
 
     def perform_create(self, serializer):
-        serializer.save(
-            requested_by=self.request.user
-        )
+        serializer.save(requested_by=self.request.user)
 
 
 class ScanDetailView(generics.RetrieveAPIView):
