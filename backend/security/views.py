@@ -29,6 +29,7 @@ from .serializers import (
 from .risk_engine import calculate_risk
 from .ml_client import predict_attack
 from .rule_client import run_rules
+from .feature_extractor import enrich_event_features
 
 logger = logging.getLogger(__name__)
 
@@ -108,7 +109,10 @@ class DetectionAnalyzeView(APIView):
 
         # -----------------------------
         # Member 3 ML service
+        # Fill in features the sender did not supply, then predict.
         # -----------------------------
+
+        enrich_event_features(event)
 
         ml_result = predict_attack(
             request_rate=event.request_rate,
@@ -163,7 +167,9 @@ class DetectionListView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        queryset = DetectionResult.objects.all().order_by("-created_at")
+        queryset = DetectionResult.objects.select_related(
+            "event", "attack"
+        ).order_by("-created_at")
 
         severity = self.request.query_params.get("severity")
 
@@ -178,7 +184,9 @@ class AlertListView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        queryset = Alert.objects.all().order_by("-created_at")
+        queryset = Alert.objects.select_related(
+            "detection__event", "detection__attack"
+        ).order_by("-created_at")
 
         severity = self.request.query_params.get("severity")
         status_filter = self.request.query_params.get("status")
