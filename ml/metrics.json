@@ -1,0 +1,50 @@
+{
+  "selected_model": "hist_gradient_boosting",
+  "cv_pr_auc": {
+    "logreg_baseline": 0.922,
+    "random_forest": 0.9222,
+    "hist_gradient_boosting": 0.9293
+  },
+  "test_roc_auc": 0.9517,
+  "test_pr_auc": 0.9242,
+  "confusion_matrix [[TN,FP],[FN,TP]]": [
+    [
+      2413,
+      159
+    ],
+    [
+      187,
+      1241
+    ]
+  ],
+  "report": {
+    "0": {
+      "precision": 0.928076923076923,
+      "recall": 0.9381804043545878,
+      "f1-score": 0.9331013147718484,
+      "support": 2572.0
+    },
+    "1": {
+      "precision": 0.8864285714285715,
+      "recall": 0.8690476190476191,
+      "f1-score": 0.8776520509193777,
+      "support": 1428.0
+    },
+    "accuracy": 0.9135,
+    "macro avg": {
+      "precision": 0.9072527472527472,
+      "recall": 0.9036140117011034,
+      "f1-score": 0.9053766828456131,
+      "support": 4000.0
+    },
+    "weighted avg": {
+      "precision": 0.9132084615384615,
+      "recall": 0.9135,
+      "f1-score": 0.9133059275765164,
+      "support": 4000.0
+    }
+  },
+  "n_train": 16000,
+  "n_test": 4000,
+  "data_source": "synthetic (ml/generate_dataset.py)"
+}
