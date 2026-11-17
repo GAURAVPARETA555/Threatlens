@@ -26,6 +26,9 @@ def build_detection_event(event):
             for key, values in parse_qs(parts.query).items()
         }
 
+    if "query" not in detection_event and "body" not in detection_event:
+        detection_event["body"] = detection_event.copy()
+
     # Model columns always win over anything inside raw_payload.
     detection_event["event_id"] = event.id
     detection_event["source_ip"] = event.source_ip
