@@ -205,7 +205,8 @@ class AlertUpdateView(generics.UpdateAPIView):
             instance.save(update_fields=["resolved_at"])
 
 
-class ScanCreateView(generics.CreateAPIView):
+class ScanCreateView(generics.ListCreateAPIView):
+    queryset = Scan.objects.all().order_by("-created_at")
     serializer_class = ScanSerializer
     permission_classes = [IsAuthenticated]
 
