@@ -342,6 +342,71 @@ Groq console link: [https://console.groq.com/keys](https://console.groq.com/keys
 
 Never paste a Groq key into the frontend, a chat message, a screenshot, or a committed file.
 
+### Groq incident explanation
+
+This feature analyzes one detection and returns:
+
+- A plain-language explanation
+- Possible impact
+- Recommended mitigation steps
+
+1. Open [http://localhost:5173/detections](http://localhost:5173/detections).
+2. Select a detection that has a high or critical risk score.
+3. Open the detection detail page.
+4. Find the **GROQ LLM INCIDENT ANALYSIS** card.
+5. Click **Generate Explanation**.
+6. Wait for the card to replace the empty state with the generated analysis.
+
+The explanation, impact, and mitigation text are saved to the database. When you reopen the same detection later, ThreatLens loads the cached explanation instead of calling Groq again.
+
+### Groq executive report
+
+This feature summarizes the current telemetry and detections into:
+
+- An executive summary
+- A threat assessment
+- Key findings
+- A risk assessment
+- Defensive recommendations
+
+1. Open [http://localhost:5173/reports](http://localhost:5173/reports).
+2. Confirm that the page shows the current event and detection totals.
+3. Click **Generate AI Executive Report**.
+4. Wait while Groq analyzes the aggregated security statistics.
+5. Select the report labeled **AI EXECUTIVE** in the Saved Report Archive.
+6. Review the generated sections in the report panel.
+7. Use **Print / Export PDF** if you want a PDF copy.
+
+Every generated AI report is saved in the Reports table. Generating it again creates another report; it does not overwrite the previous report.
+
+### Verifying Groq through the API
+
+After logging in and obtaining an access token, replace `DETECTION_ID` with a real detection ID:
+
+```powershell
+$headers = @{
+  Authorization = "Bearer $($login.access)"
+}
+
+$detectionId = 6
+
+Invoke-RestMethod `
+  -Method Post `
+  -Uri "http://127.0.0.1:8000/api/ai/explain/$detectionId/" `
+  -Headers $headers
+```
+
+Generate an executive report through the API:
+
+```powershell
+Invoke-RestMethod `
+  -Method Post `
+  -Uri "http://127.0.0.1:8000/api/reports/ai-summary/" `
+  -Headers $headers
+```
+
+The incident endpoint should return `explanation`, `impact`, and `recommended_mitigation`. The report endpoint should return `summary_json.ai_analysis`.
+
 ## 10. Optional API verification with PowerShell
 
 The browser is the recommended way to test the product. These commands are useful when diagnosing a UI problem.
