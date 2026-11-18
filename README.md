@@ -25,6 +25,7 @@ An enterprise-grade cybersecurity backend platform built with Django REST Framew
 - [Environment Configuration](#environment-configuration)
 - [Running the Services](#running-the-services)
 - [API Testing Guide](#api-testing-guide)
+- [Easy Browser Testing Guide](#easy-browser-testing-guide)
 - [Git & GitHub Safety Notes](#git--github-safety-notes)
 
 ---
@@ -411,6 +412,10 @@ curl -X POST http://127.0.0.1:8000/api/reports/ai-summary/ \
 ```
 
 ---
+
+## Easy Browser Testing Guide
+
+For a step-by-step walkthrough of starting the services and testing the complete workflow from the browser, see [TESTING_GUIDE.md](./TESTING_GUIDE.md).
 
 ## Git & GitHub Safety Notes
 
