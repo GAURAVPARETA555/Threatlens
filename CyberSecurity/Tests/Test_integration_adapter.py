@@ -30,7 +30,7 @@ class IntegrationAdapterTests(unittest.TestCase):
 
         self.assertEqual(result["event_id"], 42)
         self.assertTrue(result["rule_detected"])
-        self.assertEqual(result["rule_confidence"], 0.0)
+        self.assertEqual(result["rule_confidence"], 0.8)
         self.assertEqual(result["attack_type"], "SQL Injection")
         self.assertEqual(result["severity"], "high")
         self.assertIsInstance(result["evidence"], str)
