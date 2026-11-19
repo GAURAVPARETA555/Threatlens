@@ -58,7 +58,6 @@ def run_rules(event):
 
     return {
         "rule_detected": bool(result.get("rule_detected", False)),
-        # Member 4 reports 0.0 on purpose (uncalibrated confidence).
         "rule_confidence": float(result.get("rule_confidence", 0.0)),
         "attack_type": result.get("attack_type") or "",
         "evidence": result.get("evidence") or "",

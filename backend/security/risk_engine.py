@@ -24,12 +24,13 @@ def calculate_risk(
     rule_severity,
     ml_prediction,
     ml_confidence,
+    rule_confidence=None,
 ):
     """
     Combine the cybersecurity rule result and the ML prediction.
 
-    - The rule engine's confidence is uncalibrated (always 0.0), so it is
-      NOT used as a probability. The rule's severity is used instead.
+    - Rule confidence is a bounded heuristic signal based on corroborating
+      deterministic findings. Severity remains the fallback for compatibility.
     - ML contributes its confidence only when it predicts "malicious".
     - A rule finding sets a minimum final severity, so a confirmed
       high-severity rule hit still alerts when the ML service is down.
@@ -40,11 +41,13 @@ def calculate_risk(
     ml_confidence = max(0.0, min(1.0, float(ml_confidence)))
     rule_severity = str(rule_severity or "").lower()
 
-    rule_score = (
-        RULE_SEVERITY_WEIGHT.get(rule_severity, 0.5)
-        if rule_detected
-        else 0.0
-    )
+    if rule_detected:
+        if rule_confidence is None:
+            rule_score = RULE_SEVERITY_WEIGHT.get(rule_severity, 0.5)
+        else:
+            rule_score = max(0.0, min(1.0, float(rule_confidence)))
+    else:
+        rule_score = 0.0
 
     ml_score = (
         ml_confidence
