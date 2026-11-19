@@ -105,11 +105,24 @@ def analyze_event(event: dict) -> dict:
                 "error": str(exc),
             })
 
+    severity = _aggregate_severity(results)
+    severity_signal = {
+        "Critical": 0.95,
+        "High": 0.80,
+        "Medium": 0.55,
+        "Low": 0.30,
+    }.get(severity or "", 0.0)
+    rule_confidence = min(
+        0.95,
+        severity_signal + (0.05 * max(0, len(results) - 1)),
+    )
+
     output: dict[str, Any] = {
         "event_id": event_id,
         "rule_detected": len(results) > 0,
-        "rule_confidence": 0.0,
-        "confidence": 0.0,  # Maintained for legacy compatibility
+        "rule_confidence": rule_confidence,
+        "confidence": rule_confidence,  # Maintained for legacy compatibility
+        # This is a deterministic heuristic signal, not a calibrated probability.
         "confidence_status": "uncalibrated",
         "source": "security_rule",
         "detector_results": detector_results,
@@ -140,8 +153,6 @@ def analyze_event(event: dict) -> dict:
         for result in results
         for item in result.get("evidence", [])
     ]
-
-    severity = _aggregate_severity(results)
 
     # Legacy compatibility: scalar string if single attack type, list if multiple
     legacy_attack_type = (

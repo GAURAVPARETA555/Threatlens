@@ -75,3 +75,30 @@ class AnalyzePipelineTests(APITestCase):
                 "/api/detections/analyze/", {"event_id": 99999}, format="json"
             )
         self.assertEqual(r.status_code, 404)
+
+    def test_rule_confidence_and_ml_confidence_change_risk(self):
+        cases = [
+            ({"query": {"q": "' UNION SELECT user FROM users --"}}, 0.95),
+            ({"body": {"comment": "<script>alert(1)</script>"}}, 0.88),
+            ({"query": {"file": "../../../../etc/passwd"}}, 0.84),
+            ({"query": {"command": "id; whoami"}}, 0.86),
+            ({"query": {"q": "how to use python"}}, 0.05),
+        ]
+
+        scores = []
+        for payload, ml_confidence in cases:
+            response = self._analyze(
+                self._event(payload),
+                {
+                    "prediction": "malicious" if ml_confidence > 0.5 else "benign",
+                    "confidence": ml_confidence,
+                },
+            )
+            self.assertEqual(response.status_code, 201)
+            scores.append(response.data["final_risk_score"])
+
+        self.assertEqual(len(set(scores)), len(scores))
+        self.assertGreater(scores[0], scores[1])
+        self.assertGreater(scores[1], scores[2])
+        self.assertNotEqual(scores[2], scores[3])
+        self.assertLess(scores[4], 40)

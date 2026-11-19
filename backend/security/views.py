@@ -114,6 +114,8 @@ class DetectionAnalyzeView(APIView):
             request_rate=event.request_rate,
             failed_logins=event.failed_login_count,
             special_characters=event.special_char_count,
+            endpoint=event.endpoint,
+            raw_payload=event.raw_payload,
         )
 
         ml_prediction = ml_result["prediction"]
@@ -128,6 +130,7 @@ class DetectionAnalyzeView(APIView):
             rule_severity=rule["severity"],
             ml_prediction=ml_prediction,
             ml_confidence=ml_confidence,
+            rule_confidence=rule["rule_confidence"],
         )
 
         detection = DetectionResult.objects.create(
