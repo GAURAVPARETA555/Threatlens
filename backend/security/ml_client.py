@@ -7,11 +7,15 @@ def predict_attack(
     request_rate,
     failed_logins,
     special_characters,
+    endpoint="",
+    raw_payload=None,
 ):
     payload = {
         "request_rate": request_rate,
         "failed_logins": failed_logins,
         "special_characters": special_characters,
+        "endpoint": endpoint,
+        "raw_payload": raw_payload or {},
     }
 
     ml_url = getattr(
