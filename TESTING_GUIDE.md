@@ -246,7 +246,7 @@ Expected result:
 
 - The rule signal should be clean.
 - No high or critical alert should be created by the rule engine.
-- The mock ML service may still report `malicious` because it is deliberately configured as a deterministic test service. This is useful for testing the hybrid risk calculation, but it is not a production ML prediction.
+- The mock ML service should report `benign` with low confidence for this payload. It is a deterministic testing implementation, not a production ML prediction.
 
 ## 7. Other safe simulated attack payloads
 
